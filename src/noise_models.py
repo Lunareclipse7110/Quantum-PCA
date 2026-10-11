@@ -23,8 +23,10 @@ BASIS_GATES = ["id", "rz", "sx", "x", "cx"]
 #  p_ro = symmetric readout bit-flip prob)
 NOISE_LEVELS = {
     "ideal": None,
-    "low": dict(p1=0.001, p2=0.010, p_ro=0.01),
-    "moderate": dict(p1=0.005, p2=0.030, p_ro=0.05),
+    # Assignment spec: N1 = 0.1% 1q / 0.5% 2q / 1% readout
+    "low": dict(p1=0.001, p2=0.005, p_ro=0.01),
+    # Assignment spec: N2 = 1% 1q / 2% 2q / 3% readout
+    "moderate": dict(p1=0.01, p2=0.02, p_ro=0.03),
 }
 
 
@@ -76,5 +78,6 @@ def circuit_resource_report(transpiled_circuit) -> dict:
         "n_qubits": transpiled_circuit.num_qubits,
         "depth": transpiled_circuit.depth(),
         "n_gates_total": sum(ops.values()),
+        "n_two_qubit_gates": ops.get("cx", 0),
         "gate_counts": dict(ops),
     }

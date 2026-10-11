@@ -16,6 +16,7 @@ import csv
 import json
 import os
 import time
+import zlib
 
 import numpy as np
 
@@ -34,7 +35,7 @@ FIELDNAMES = [
     "trash_qubits", "latent_qubits",
     "q_final_training_cost", "q_train_iterations", "q_train_time_s",
     "q_mean_fidelity", "q_std_fidelity", "q_reconstruction_error",
-    "q_eval_time_s", "q_circuit_depth", "q_n_gates_total",
+    "q_eval_time_s", "q_circuit_depth", "q_n_gates_total", "q_n_two_qubit_gates",
     "c_n_components", "c_explained_variance_ratio_sum", "c_reconstruction_mse",
     "c_fit_time_s", "c_transform_time_s",
 ]
@@ -55,7 +56,8 @@ def run_all(repeats: int = 3, n_train_samples: int = 16, n_eval_samples: int = 2
             classical = run_classical_pca(ds, n_components)
 
             for repeat in range(repeats):
-                seed = 1000 * repeat + hash((dataset_name, cfg.exp_id)) % 1000
+                # zlib.crc32 is deterministic across runs (Python's hash() of a str is NOT).
+                seed = 1000 * repeat + zlib.crc32(f"{dataset_name}-{cfg.exp_id}".encode()) % 1000
                 t0 = time.perf_counter()
                 qae_result = run_qae_experiment(
                     n_qubits=cfg.n_qubits,
@@ -90,6 +92,7 @@ def run_all(repeats: int = 3, n_train_samples: int = 16, n_eval_samples: int = 2
                     "q_eval_time_s": qae_result.evaluation.eval_time_s,
                     "q_circuit_depth": qae_result.resource_report["depth"],
                     "q_n_gates_total": qae_result.resource_report["n_gates_total"],
+                    "q_n_two_qubit_gates": qae_result.resource_report["n_two_qubit_gates"],
                     "c_n_components": classical.n_components,
                     "c_explained_variance_ratio_sum": classical.explained_variance_ratio_sum,
                     "c_reconstruction_mse": classical.reconstruction_mse,

@@ -90,12 +90,19 @@ def normalize_rows_unit_norm(X: np.ndarray, eps: float = 1e-12) -> np.ndarray:
 def prepare_dataset(
     dataset_name: str,
     n_qubits: int,
-    test_size: float = 0.3,
+    test_size: float = 0.2,
     random_state: int = RANDOM_STATE_DEFAULT,
 ) -> ReducedDataset:
     """
-    Full pipeline: load -> stratified train/test split -> standardize
-    (fit on train only) -> reduce to 2**n_qubits columns -> unit-normalize.
+    Full pipeline: load -> stratified 80:20 train/test split -> choose the
+    feature columns FROM THE TRAIN SPLIT ONLY (top-variance features when the
+    dataset has >= 2**n features, otherwise keep all) -> apply the SAME columns
+    to train and test -> standardize (fit on train only) -> zero-pad to
+    2**n_qubits if needed -> unit-normalize.
+
+    BUG FIX: the earlier version chose the columns separately for the train
+    and test splits (on standardized data, where every train variance is ~1),
+    so train and test could end up using different feature columns.
     """
     dim = 2 ** n_qubits
     X, y = load_raw(dataset_name)
@@ -104,15 +111,26 @@ def prepare_dataset(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
 
+    n_features = X_train_raw.shape[1]
+    if n_features >= dim:
+        cols = _select_top_variance_features(X_train_raw, dim)  # train split only
+        X_train_sel, X_test_sel = X_train_raw[:, cols], X_test_raw[:, cols]
+        n_real = dim
+    else:
+        X_train_sel, X_test_sel = X_train_raw, X_test_raw
+        n_real = n_features
+
     scaler = StandardScaler()
-    X_train_std = scaler.fit_transform(X_train_raw)
-    X_test_std = scaler.transform(X_test_raw)
+    X_train_std = scaler.fit_transform(X_train_sel)
+    X_test_std = scaler.transform(X_test_sel)
 
-    X_train_red, n_real = reduce_to_dim(X_train_std, dim)
-    X_test_red, _ = reduce_to_dim(X_test_std, dim)
+    if n_real < dim:  # zero-pad up to 2**n columns
+        pad = dim - n_real
+        X_train_std = np.pad(X_train_std, ((0, 0), (0, pad)), mode="constant")
+        X_test_std = np.pad(X_test_std, ((0, 0), (0, pad)), mode="constant")
 
-    X_train_norm = normalize_rows_unit_norm(X_train_red)
-    X_test_norm = normalize_rows_unit_norm(X_test_red)
+    X_train_norm = normalize_rows_unit_norm(X_train_std)
+    X_test_norm = normalize_rows_unit_norm(X_test_std)
 
     return ReducedDataset(
         name=dataset_name,

@@ -37,6 +37,7 @@ def _agg(df):
     group_cols = ["dataset", "exp_id", "n_qubits", "depth", "noise_level"]
     metrics = [
         "q_reconstruction_error", "q_mean_fidelity", "q_circuit_depth", "q_n_gates_total",
+        "q_n_two_qubit_gates",
         "q_train_time_s", "q_eval_time_s",
         "c_reconstruction_mse", "c_explained_variance_ratio_sum", "c_fit_time_s",
     ]

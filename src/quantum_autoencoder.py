@@ -262,7 +262,11 @@ def run_qae_experiment(
     latent_qubits = n_qubits - trash_qubits
 
     noise_model = build_noise_model(noise_level)
-    backend = AerSimulator(noise_model=noise_model) if noise_model is not None else AerSimulator()
+    # seed_simulator makes the shot sampling reproducible (same seed -> same counts).
+    if noise_model is not None:
+        backend = AerSimulator(noise_model=noise_model, seed_simulator=seed)
+    else:
+        backend = AerSimulator(seed_simulator=seed)
 
     ansatz = build_encoder_ansatz(n_qubits, depth)
 

@@ -61,7 +61,7 @@ Amplitude encoding a vector onto `n` qubits requires a vector of length
 `2**n` with unit L2 norm. Neither Wine (13 features) nor WDBC (30 features)
 is a power of two, hence **"Wine / WDBC reduced"**:
 
-1. Stratified train/test split (70/30).
+1. Stratified train/test split (80/20).
 2. Standardize (zero mean, unit variance), fit on the train split only.
 3. Reduce to exactly `2**n_qubits` columns:
    - if the dataset has enough features, keep the top-`2**n_qubits` by
@@ -110,8 +110,8 @@ not a bug.
   | Level | 1-qubit depolarizing | 2-qubit depolarizing | Readout flip |
   |---|---|---|---|
   | Ideal | — | — | — |
-  | Low | 0.001 | 0.010 | 0.01 |
-  | Moderate | 0.005 | 0.030 | 0.05 |
+  | Low (N1) | 0.001 | 0.005 | 0.01 |
+  | Moderate (N2) | 0.010 | 0.020 | 0.03 |
 
 ## 4. Classical baseline (`src/classical_baseline.py`)
 
